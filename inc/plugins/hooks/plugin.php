@@ -135,7 +135,7 @@ function hooks_uninstall()
     hooks_depend();
 
     // Confirmation step.
-    if (!$mybb->input['confirm']) {
+    if (!isset($mybb->input['confirm'])) {
         $link = $PL->url_append('index.php', array(
             'module' => 'config-plugins',
             'action' => 'deactivate',
@@ -156,7 +156,7 @@ function hooks_uninstall()
         $db->drop_table('hooks');
     }
 
-    @unlink(HOOKS_DATA);
+    unlink(HOOKS_DATA);
 }
 
 
@@ -176,7 +176,7 @@ function hooks_deactivate()
 {
     // truncate the hooks file
     // activate recreates it from the DB
-    @unlink(HOOKS_DATA);
+    unlink(HOOKS_DATA);
 }
 
 
@@ -203,8 +203,8 @@ function hooks_depend()
         admin_redirect("index.php?module=config-plugins");
     }
 
-    if ((file_exists(HOOKS_DATA) && !@is_writable(HOOKS_DATA)) ||
-        (!file_exists(HOOKS_DATA) && !@is_writable(dirname(HOOKS_DATA)))) {
+    if ((file_exists(HOOKS_DATA) && !is_writable(HOOKS_DATA)) ||
+        (!file_exists(HOOKS_DATA) && !is_writable(dirname(HOOKS_DATA)))) {
         $lackperms = $lang->sprintf(
             $lang->hooks_error_write_permission,
             HOOKS_DATA
@@ -252,6 +252,8 @@ function hooks_update_data()
         array('order_by' => 'hhook,hpriority,hid')
     );
 
+    $hooks = [];
+
     while ($row = $db->fetch_array($query)) {
         $hooks[] = $row;
     }
@@ -292,22 +294,25 @@ function hooks_create_function($arg, $code)
 
     if (version_compare(PHP_VERSION, '5.3.0', '>=')) {
         // closure test.
-        $result = @eval("return function({$arg}) { {$code} };");
+        $result = eval("return function({$arg}) { {$code} };");
     }
 
     if ($result !== false) {
         // blind if test.
-        $result = @eval("if(0) { function xy({$arg}) { {$code} } } return 1;");
+        $result = eval("if(0) { function xy({$arg}) { {$code} } } return 1;");
     }
 
     if ($result !== false) {
         // blind if class test.
-        $result = @eval("if(0) { class x { function y({$arg}) { {$code} } } } return 1;");
+        $result = eval("if(0) { class x { function y({$arg}) { {$code} } } } return 1;");
     }
 
-    if ($result !== false) {
+    if ($result !== false && function_exists('create_function')) {
         // create_function test.
-        $result = @create_function($arg, $code);
+        $result = create_function($arg, $code);
+        /*$result = function($arg, $code) {
+            eval($code);
+        };*/
     }
 
     return $result !== false;
@@ -348,7 +353,7 @@ function hooks_tabs_start(&$arguments)
 {
     global $mybb, $lang;
 
-    if ($mybb->input['module'] == 'config-plugins') {
+    if ($mybb->get_input('module') == 'config-plugins') {
         $lang->load('hooks');
 
         $arguments['hooks'] = array(
@@ -366,12 +371,12 @@ function hooks_plugins_begin()
 {
     global $mybb, $lang, $page;
 
-    if ($mybb->input['action'] == 'hooks') {
+    if ($mybb->get_input('action') == 'hooks') {
         $lang->load('hooks');
 
         $page->add_breadcrumb_item($lang->hooks, HOOKS_URL);
 
-        switch ($mybb->input['mode']) {
+        switch ($mybb->get_input('mode')) {
             case 'activate':
                 hooks_action_activate();
                 break;
@@ -456,16 +461,16 @@ function hooks_output_preview()
     require_once MYBB_ROOT . "inc/class_parser.php";
     $parser = new postParser;
 
-    if (strlen($mybb->input['hargument'])) {
-        $arg = "&\${$mybb->input['hargument']}";
+    if (strlen($mybb->get_input('hargument'))) {
+        $arg = "&\${$mybb->get_input('hargument')}";
     } else {
         $arg = "";
     }
 
-    $code = str_replace("\n", "\n    ", "\n{$mybb->input['hcode']}");
+    $code = str_replace("\n", "\n    ", "\n{$mybb->get_input('hcode')}");
     $code = substr($code, 1);
     $code = $parser->mycode_parse_php(
-        "function hooks_{$mybb->input['hhook']}({$arg})\n{\n{$code}\n}",
+        "function hooks_{$mybb->get_input('hhook')}({$arg})\n{\n{$code}\n}",
         true
     );
 
@@ -481,12 +486,12 @@ function hooks_action_activate()
 {
     global $mybb, $db, $lang;
 
-    if (!verify_post_check($mybb->input['my_post_key'])) {
+    if (!verify_post_check($mybb->get_input('my_post_key'))) {
         flash_message($lang->hooks_error_key, 'error');
         admin_redirect(HOOKS_URL);
     }
 
-    $hook = intval($mybb->input['hook']);
+    $hook = intval($mybb->get_input('hook'));
 
     if ($hook) {
         // query hook data
@@ -516,12 +521,12 @@ function hooks_action_deactivate()
 {
     global $mybb, $db, $lang;
 
-    if (!verify_post_check($mybb->input['my_post_key'])) {
+    if (!verify_post_check($mybb->get_input('my_post_key'))) {
         flash_message($lang->hooks_error_key, 'error');
         admin_redirect(HOOKS_URL);
     }
 
-    $hook = intval($mybb->input['hook']);
+    $hook = intval($mybb->get_input('hook'));
 
     if ($hook) {
         $db->update_query('hooks', array('hactive' => '0'), "hid={$hook}");
@@ -536,12 +541,12 @@ function hooks_action_delete()
 {
     global $mybb, $db, $lang;
 
-    if (!verify_post_check($mybb->input['my_post_key'])) {
+    if (!verify_post_check($mybb->get_input('my_post_key'))) {
         flash_message($lang->hooks_error_key, 'error');
         admin_redirect(HOOKS_URL);
     }
 
-    $hook = intval($mybb->input['hook']);
+    $hook = intval($mybb->get_input('hook'));
 
     if ($hook) {
         $db->delete_query('hooks', "hid={$hook}");
@@ -743,52 +748,57 @@ function hooks_page_edit()
 
     $lang->load('hooks');
 
-    $hid = intval($mybb->input['hook']);
+    $hid = $mybb->get_input('hook', \MyBB::INPUT_INT);
+
+    $argument = $mybb->get_input('hargument');
+
+    $errors = array();
+
+    $preview = false;
 
     if ($mybb->request_method == 'post') {
-        if ($mybb->input['cancel']) {
+        if ($mybb->get_input('cancel')) {
             admin_redirect(HOOKS_URL);
         }
 
         // validate input
 
-        $errors = array();
-
-        $hook = trim($mybb->input['hhook']);
+        $hook = trim($mybb->get_input('hhook'));
 
         if (!strlen($hook)) {
             $errors[] = $lang->hooks_error_hook;
         }
 
-        $title = trim($mybb->input['htitle']);
+        $title = trim($mybb->get_input('htitle'));
 
         if (!$title) {
             $errors[] = $lang->hooks_error_title;
         }
 
-        $description = trim($mybb->input['hdescription']);
+        $description = trim($mybb->get_input('hdescription'));
         // description is optional
 
-        $priority = intval($mybb->input['hpriority']);
+        $priority = intval($mybb->get_input('hpriority'));
         // priority is optional
 
-        if (trim($mybb->input['hpriority']) !== strval($priority)) {
+        if (trim($mybb->get_input('hpriority')) !== strval($priority)) {
             // default priority
             $priority = 10;
         }
 
-        $code = $mybb->input['hcode'];
+        $code = $mybb->get_input('hcode');
 
         if (!trim($code)) {
             $errors[] = $lang->hooks_error_code;
         }
 
-        $argument = $mybb->input['hargument'];
+        $argument = $mybb->get_input('hargument');
 
         hooks_validate($hook, $argument, $code, $errors);
 
-        if (!$errors && !$mybb->input['preview']) {
+        if (!$errors && !$mybb->get_input('preview')) {
             $data = array(
+                'hactive' => '0',
                 'htitle' => $db->escape_string($title),
                 'hdescription' => $db->escape_string($description),
                 'hhook' => $db->escape_string($hook),
@@ -796,6 +806,8 @@ function hooks_page_edit()
                 'hcode' => $db->escape_string($code),
                 'hargument' => $db->escape_string($argument),
             );
+
+            $update = 0;
 
             if ($hid) {
                 $update = $db->update_query(
@@ -853,7 +865,7 @@ function hooks_page_edit()
 
     echo $form->generate_hidden_field(
         'hook',
-        intval($mybb->input['hook']),
+        $mybb->get_input('hook'),
         array('id' => 'hook')
     );
 
@@ -862,7 +874,7 @@ function hooks_page_edit()
         $lang->hooks_hook_desc,
         $form->generate_text_box(
             'hhook',
-            trim($mybb->input['hhook']),
+            trim($mybb->get_input('hhook')),
             array('id' => 'hhook')
         ),
         'hhook'
@@ -873,7 +885,7 @@ function hooks_page_edit()
         $lang->hooks_title_desc,
         $form->generate_text_box(
             'htitle',
-            trim($mybb->input['htitle']),
+            trim($mybb->get_input('htitle')),
             array('id' => 'htitle')
         ),
         'htitle'
@@ -884,7 +896,7 @@ function hooks_page_edit()
         $lang->hooks_description_desc,
         $form->generate_text_box(
             'hdescription',
-            trim($mybb->input['hdescription']),
+            trim($mybb->get_input('hdescription')),
             array('id' => 'hdescription')
         ),
         'hdescription'
@@ -895,7 +907,7 @@ function hooks_page_edit()
         $lang->hooks_priority_desc,
         $form->generate_text_box(
             'hpriority',
-            $mybb->input['hpriority'],
+            $mybb->get_input('hpriority'),
             array('id' => 'hpriority')
         ),
         'hpriority'
@@ -903,10 +915,13 @@ function hooks_page_edit()
 
     $form_container->output_row(
         $lang->hooks_argument,
-        $lang->hooks_argument_desc,
+        $lang->sprintf(
+            $lang->hooks_argument_desc,
+            $argument
+        ),
         $form->generate_text_box(
             'hargument',
-            $mybb->input['hargument'],
+            $mybb->get_input('hargument'),
             array('id' => 'hargument')
         ),
         'hargument'
@@ -917,7 +932,7 @@ function hooks_page_edit()
         $lang->hooks_code_desc,
         $form->generate_text_area(
             'hcode',
-            $mybb->input['hcode'],
+            $mybb->get_input('hcode'),
             array('id' => 'hcode')
         ),
         'hcode'
@@ -954,13 +969,13 @@ function hooks_page_import()
     $page->add_breadcrumb_item($lang->hooks_import, $importurl);
 
     if ($mybb->request_method == 'post') {
-        if ($mybb->input['cancel']) {
+        if (isset($mybb->input['cancel'])) {
             admin_redirect(HOOKS_URL);
         }
 
-        if (@is_uploaded_file($_FILES['hooks']['tmp_name'])) {
-            $contents = @file_get_contents($_FILES['hooks']['tmp_name']);
-            @unlink($_FILES['hooks']['tmp_name']);
+        if (is_uploaded_file($_FILES['hooks']['tmp_name'])) {
+            $contents = file_get_contents($_FILES['hooks']['tmp_name']);
+            unlink($_FILES['hooks']['tmp_name']);
 
             if ($contents) {
                 $contents = $PL->xml_import($contents);
@@ -1070,12 +1085,12 @@ function hooks_page_export()
     if ($mybb->request_method == 'post') {
         $errors = array();
 
-        if ($mybb->input['cancel']) {
+        if (isset($mybb->input['cancel'])) {
             admin_redirect(HOOKS_URL);
         }
 
-        if ($mybb->input['filename']) {
-            $filename = $mybb->input['filename'];
+        if ($mybb->get_input('filename')) {
+            $filename = $mybb->get_input('filename');
             $filename = str_replace('/', '_', $filename);
             $filename = str_replace('\\', '_', $filename);
             $filename = str_replace('.', '_', $filename);
@@ -1084,12 +1099,12 @@ function hooks_page_export()
             $filename = "hooks.xml";
         }
 
-        if ($mybb->input['hooks']) {
-            $mybb->input['hook'] = implode(',', $mybb->input['hooks']);
+        if ($mybb->get_input('hooks', \MyBB::INPUT_ARRAY)) {
+            $mybb->input['hook'] = implode(',', $mybb->get_input('hooks', \MyBB::INPUT_ARRAY));
 
             $where = array();
 
-            foreach ((array)$mybb->input['hooks'] as $hid) {
+            foreach ($mybb->get_input('hooks', \MyBB::INPUT_ARRAY) as $hid) {
                 $where[] = $db->escape_string(strval($hid));
             }
 
@@ -1111,7 +1126,7 @@ function hooks_page_export()
             }
 
             if (count($hooks)) {
-                if ($mybb->input['plugin']) {
+                if ($mybb->get_input('plugin')) {
                     hooks_export_plugin($hooks, $errors);
                 } else {
                     $PL->xml_export($hooks, $filename, 'MyBB Hooks exported {time}');
@@ -1125,10 +1140,10 @@ function hooks_page_export()
         }
     }
 
-    if ($mybb->input['hook']) {
+    if ($mybb->get_input('hook')) {
         $hooks = array();
 
-        foreach (explode(",", $mybb->input['hook']) as $hid) {
+        foreach (explode(",", $mybb->get_input('hook')) as $hid) {
             $hooks[] = htmlspecialchars($hid);
         }
     }
@@ -1188,7 +1203,7 @@ function hooks_page_export()
     $table->construct_cell(
         $lang->hooks_export_filename
         . '<br /><br />'
-        . $form->generate_text_box('filename', $mybb->input['filename'])
+        . $form->generate_text_box('filename', $mybb->get_input('filename'))
     );
     $table->construct_row();
 
@@ -1215,56 +1230,56 @@ function hooks_page_export()
     $table->construct_cell(
         $lang->hooks_export_plugin_name
         . '<br /><br />'
-        . $form->generate_text_box('name', $mybb->input['name'])
+        . $form->generate_text_box('name', $mybb->get_input('name'))
     );
     $table->construct_row();
 
     $table->construct_cell(
         $lang->hooks_export_plugin_description
         . '<br /><br />'
-        . $form->generate_text_box('description', $mybb->input['description'])
+        . $form->generate_text_box('description', $mybb->get_input('description'))
     );
     $table->construct_row();
 
     $table->construct_cell(
         $lang->hooks_export_plugin_website
         . '<br /><br />'
-        . $form->generate_text_box('website', $mybb->input['website'])
+        . $form->generate_text_box('website', $mybb->get_input('website'))
     );
     $table->construct_row();
 
     $table->construct_cell(
         $lang->hooks_export_plugin_author
         . '<br /><br />'
-        . $form->generate_text_box('author', $mybb->input['author'])
+        . $form->generate_text_box('author', $mybb->get_input('author'))
     );
     $table->construct_row();
 
     $table->construct_cell(
         $lang->hooks_export_plugin_authorsite
         . '<br /><br />'
-        . $form->generate_text_box('authorsite', $mybb->input['authorsite'])
+        . $form->generate_text_box('authorsite', $mybb->get_input('authorsite'))
     );
     $table->construct_row();
 
     $table->construct_cell(
         $lang->hooks_export_plugin_version
         . '<br /><br />'
-        . $form->generate_text_box('version', $mybb->input['version'])
+        . $form->generate_text_box('version', $mybb->get_input('version'))
     );
     $table->construct_row();
 
     $table->construct_cell(
         $lang->hooks_export_plugin_guid
         . '<br /><br />'
-        . $form->generate_text_box('guid', $mybb->input['guid'])
+        . $form->generate_text_box('guid', $mybb->get_input('guid'))
     );
     $table->construct_row();
 
     $table->construct_cell(
         $lang->hooks_export_plugin_compatibility
         . '<br /><br />'
-        . $form->generate_text_box('compatibility', $mybb->input['compatibility'])
+        . $form->generate_text_box('compatibility', $mybb->get_input('compatibility'))
     );
     $table->construct_row();
 
@@ -1285,11 +1300,11 @@ function hooks_export_plugin($hooks, &$errors)
 
     // Validate input.
 
-    if (!strlen($mybb->input['filename'])) {
+    if (!strlen($mybb->get_input('filename'))) {
         $errors[] = $lang->hooks_export_plugin_error_filename;
     } else {
-        $filename = "{$mybb->input['filename']}.php";
-        $prefix = $mybb->input['filename'];
+        $filename = "{$mybb->get_input('filename')}.php";
+        $prefix = $mybb->get_input('filename');
 
         hooks_validate("{$prefix}_suffix", '', '', $validate);
 
@@ -1298,19 +1313,19 @@ function hooks_export_plugin($hooks, &$errors)
         }
     }
 
-    if (!strlen($mybb->input['name'])) {
+    if (!strlen($mybb->get_input('name'))) {
         $errors[] = $lang->hooks_export_plugin_error_name;
     }
 
-    if (!strlen($mybb->input['author'])) {
+    if (!strlen($mybb->get_input('author'))) {
         $errors[] = $lang->hooks_export_plugin_error_author;
     }
 
-    if (!strlen($mybb->input['version'])) {
+    if (!strlen($mybb->get_input('version'))) {
         $errors[] = $lang->hooks_export_plugin_error_version;
     }
 
-    if (!strlen($mybb->input['compatibility'])) {
+    if (!strlen($mybb->get_input('compatibility'))) {
         $errors[] = $lang->hooks_export_plugin_error_compatibility;
     }
 
@@ -1324,25 +1339,25 @@ function hooks_export_plugin($hooks, &$errors)
     // Output PHP.
     $date = gmdate('D, d M Y H:i:s T');
 
-    @header('Content-Type: application/text; charset=UTF-8');
-    @header('Expires: Sun, 20 Feb 2011 13:47:47 GMT'); // past
-    @header("Last-Modified: {$date}");
-    @header('Pragma: no-cache');
-    @header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Type: application/text; charset=UTF-8');
+    header('Expires: Sun, 20 Feb 2011 13:47:47 GMT'); // past
+    header("Last-Modified: {$date}");
+    header('Pragma: no-cache');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
 
     echo "<?php\n/* Exported by Hooks plugin {$date} */\n\n";
     echo "if(!defined('IN_MYBB'))\n{\n    die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');\n}\n\n";
     echo "/* --- Plugin API: --- */\n\n";
 
     $info = array(
-        "name" => strval($mybb->input['name']),
-        "description" => strval($mybb->input['description']),
-        "website" => strval($mybb->input['website']),
-        "author" => strval($mybb->input['author']),
-        "authorsite" => strval($mybb->input['authorsite']),
-        "version" => strval($mybb->input['version']),
-        "guid" => strval($mybb->input['guid']),
-        "compatibility" => strval($mybb->input['compatibility']),
+        "name" => strval($mybb->get_input('name')),
+        "description" => strval($mybb->get_input('description')),
+        "website" => strval($mybb->get_input('website')),
+        "author" => strval($mybb->get_input('author')),
+        "authorsite" => strval($mybb->get_input('authorsite')),
+        "version" => strval($mybb->get_input('version')),
+        "guid" => strval($mybb->get_input('guid')),
+        "compatibility" => strval($mybb->get_input('compatibility')),
     );
 
     echo "function {$prefix}_info()\n{\n    return ";

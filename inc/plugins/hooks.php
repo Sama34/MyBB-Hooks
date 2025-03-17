@@ -33,7 +33,7 @@ if (defined("IN_ADMINCP")) {
     require_once MYBB_ROOT . "inc/plugins/hooks/plugin.php";
 }
 
-if (@is_writable(HOOKS_DATA)) {
+if (is_writable(HOOKS_DATA)) {
     require_once HOOKS_DATA;
 }
 
