@@ -19,18 +19,18 @@
  */
 
 // Disallow direct access to this file for security reasons.
-if (!defined("IN_MYBB")) {
+if (!defined('IN_MYBB')) {
     die(
-    "Direct initialization of this file is not allowed.<br /><br />
-         Please make sure IN_MYBB is defined."
+    'Direct initialization of this file is not allowed.<br /><br />
+         Please make sure IN_MYBB is defined.'
     );
 }
 
 define('HOOKS_DATA', MYBB_ROOT . 'cache/hooks-plugin-data.php');
 
 // Load the actual plugin only if in Admin CP.
-if (defined("IN_ADMINCP")) {
-    require_once MYBB_ROOT . "inc/plugins/hooks/plugin.php";
+if (defined('IN_ADMINCP')) {
+    require_once MYBB_ROOT . 'inc/plugins/hooks/plugin.php';
 }
 
 if (is_writable(HOOKS_DATA)) {

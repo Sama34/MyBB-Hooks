@@ -23,8 +23,8 @@ if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
 
-if (!defined("PLUGINLIBRARY")) {
-    define("PLUGINLIBRARY", MYBB_ROOT . "inc/plugins/pluginlibrary.php");
+if (!defined('PLUGINLIBRARY')) {
+    define('PLUGINLIBRARY', MYBB_ROOT . 'inc/plugins/pluginlibrary.php');
 }
 
 define('HOOKS_URL', 'index.php?module=config-plugins&amp;action=hooks');
@@ -147,9 +147,9 @@ function hooks_uninstall()
 
         flash_message(
             "{$lang->hooks_plugin_uninstall} <a href=\"{$link}\">{$lang->hooks_plugin_uninstall_confirm}</a>",
-            "error"
+            'error'
         );
-        admin_redirect("index.php?module=config-plugins");
+        admin_redirect('index.php?module=config-plugins');
     }
 
     if ($db->table_exists('hooks')) {
@@ -200,7 +200,7 @@ function hooks_depend()
 
     if ($PL->version < 5) {
         flash_message($lang->hooks_PL_old, 'error');
-        admin_redirect("index.php?module=config-plugins");
+        admin_redirect('index.php?module=config-plugins');
     }
 
     if ((file_exists(HOOKS_DATA) && !is_writable(HOOKS_DATA)) ||
@@ -210,7 +210,7 @@ function hooks_depend()
             HOOKS_DATA
         );
         flash_message($lackperms, 'error');
-        admin_redirect("index.php?module=config-plugins");
+        admin_redirect('index.php?module=config-plugins');
     }
 }
 
@@ -431,7 +431,7 @@ function hooks_output_tabs()
 
     $sub_tabs['browse_plugins'] = array(
         'title' => $lang->browse_plugins,
-        'link' => "index.php?module=config-plugins&amp;action=browse",
+        'link' => 'index.php?module=config-plugins&amp;action=browse',
         'description' => $lang->browse_plugins_desc
     );
 
@@ -458,13 +458,13 @@ function hooks_output_preview()
 {
     global $mybb, $lang;
 
-    require_once MYBB_ROOT . "inc/class_parser.php";
-    $parser = new postParser;
+    require_once MYBB_ROOT . 'inc/class_parser.php';
+    $parser = new postParser();
 
     if (strlen($mybb->get_input('hargument'))) {
         $arg = "&\${$mybb->get_input('hargument')}";
     } else {
-        $arg = "";
+        $arg = '';
     }
 
     $code = str_replace("\n", "\n    ", "\n{$mybb->get_input('hcode')}");
@@ -474,7 +474,7 @@ function hooks_output_preview()
         true
     );
 
-    $table = new Table;
+    $table = new Table();
     $table->construct_cell($code);
     $table->construct_row();
     $table->output($lang->hooks_preview_output);
@@ -572,7 +572,7 @@ function hooks_page()
 
     $exportids = array();
 
-    $table = new Table;
+    $table = new Table();
     $table->construct_header(
         $lang->hooks_controls,
         array(
@@ -703,7 +703,7 @@ function hooks_page()
     $importurl = $PL->url_append(HOOKS_URL, array('mode' => 'import'));
     $exporturl = $PL->url_append(HOOKS_URL, array(
         'mode' => 'export',
-        'hook' => implode(",", $exportids)
+        'hook' => implode(',', $exportids)
     ));
 
     $table->construct_cell(
@@ -748,7 +748,7 @@ function hooks_page_edit()
 
     $lang->load('hooks');
 
-    $hid = $mybb->get_input('hook', \MyBB::INPUT_INT);
+    $hid = $mybb->get_input('hook', MyBB::INPUT_INT);
 
     $argument = $mybb->get_input('hargument');
 
@@ -1044,7 +1044,7 @@ function hooks_page_import()
     hooks_output_header();
     hooks_output_tabs();
 
-    $table = new Table;
+    $table = new Table();
 
     $table->construct_header($lang->hooks);
 
@@ -1053,7 +1053,7 @@ function hooks_page_import()
     $table->construct_cell(
         $lang->hooks_import_file
         . '<br /><br />'
-        . $form->generate_file_upload_box("hooks")
+        . $form->generate_file_upload_box('hooks')
     );
     $table->construct_row();
 
@@ -1096,15 +1096,15 @@ function hooks_page_export()
             $filename = str_replace('.', '_', $filename);
             $filename = "hooks-{$filename}.xml";
         } else {
-            $filename = "hooks.xml";
+            $filename = 'hooks.xml';
         }
 
-        if ($mybb->get_input('hooks', \MyBB::INPUT_ARRAY)) {
-            $mybb->input['hook'] = implode(',', $mybb->get_input('hooks', \MyBB::INPUT_ARRAY));
+        if ($mybb->get_input('hooks', MyBB::INPUT_ARRAY)) {
+            $mybb->input['hook'] = implode(',', $mybb->get_input('hooks', MyBB::INPUT_ARRAY));
 
             $where = array();
 
-            foreach ($mybb->get_input('hooks', \MyBB::INPUT_ARRAY) as $hid) {
+            foreach ($mybb->get_input('hooks', MyBB::INPUT_ARRAY) as $hid) {
                 $where[] = $db->escape_string(strval($hid));
             }
 
@@ -1112,8 +1112,8 @@ function hooks_page_export()
             $where = "hid IN ('{$where}')";
 
             $query = $db->simple_select(
-                "hooks",
-                "hhook,htitle,hdescription,hpriority,hargument,hcode,hid",
+                'hooks',
+                'hhook,htitle,hdescription,hpriority,hargument,hcode,hid',
                 $where,
                 array('order_by' => 'hhook,htitle,hid')
             );
@@ -1143,7 +1143,7 @@ function hooks_page_export()
     if ($mybb->get_input('hook')) {
         $hooks = array();
 
-        foreach (explode(",", $mybb->get_input('hook')) as $hid) {
+        foreach (explode(',', $mybb->get_input('hook')) as $hid) {
             $hooks[] = htmlspecialchars($hid);
         }
     }
@@ -1182,9 +1182,9 @@ function hooks_page_export()
         $hooks_selects[$row['hid']] = htmlspecialchars($row['htitle']);
     }
 
-    $form = new Form($exporturl, "post");
+    $form = new Form($exporturl, 'post');
 
-    $table = new Table;
+    $table = new Table();
 
 //    $table->construct_header($lang->hooks);
 
@@ -1192,7 +1192,7 @@ function hooks_page_export()
         $lang->hooks_export_select
         . '<br /><br />'
         . $form->generate_select_box(
-            "hooks[]",
+            'hooks[]',
             $hooks_selects,
             $hooks,
             array('multiple' => true, 'id' => 'hooks_select')
@@ -1221,11 +1221,11 @@ function hooks_page_export()
     $table->output($lang->hooks_export_caption);
     $form->output_submit_wrapper($buttons);
 
-    echo "<br />";
+    echo '<br />';
 
     // --- plugin export fields: ---
 
-    $table = new Table;
+    $table = new Table();
 
     $table->construct_cell(
         $lang->hooks_export_plugin_name
@@ -1296,7 +1296,7 @@ function hooks_export_plugin($hooks, &$errors)
     global $mybb, $lang;
 
     $validate = array();
-    $data = "";
+    $data = '';
 
     // Validate input.
 
@@ -1350,14 +1350,14 @@ function hooks_export_plugin($hooks, &$errors)
     echo "/* --- Plugin API: --- */\n\n";
 
     $info = array(
-        "name" => strval($mybb->get_input('name')),
-        "description" => strval($mybb->get_input('description')),
-        "website" => strval($mybb->get_input('website')),
-        "author" => strval($mybb->get_input('author')),
-        "authorsite" => strval($mybb->get_input('authorsite')),
-        "version" => strval($mybb->get_input('version')),
-        "guid" => strval($mybb->get_input('guid')),
-        "compatibility" => strval($mybb->get_input('compatibility')),
+        'name' => strval($mybb->get_input('name')),
+        'description' => strval($mybb->get_input('description')),
+        'website' => strval($mybb->get_input('website')),
+        'author' => strval($mybb->get_input('author')),
+        'authorsite' => strval($mybb->get_input('authorsite')),
+        'version' => strval($mybb->get_input('version')),
+        'guid' => strval($mybb->get_input('guid')),
+        'compatibility' => strval($mybb->get_input('compatibility')),
     );
 
     echo "function {$prefix}_info()\n{\n    return ";

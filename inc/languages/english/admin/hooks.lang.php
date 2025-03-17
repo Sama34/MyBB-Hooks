@@ -84,8 +84,8 @@ $l = array(
     'hooks_legend_cross' => 'Hook is disabled and inactive',
     'hooks_legend_tick' => 'Hook is enabled and active',
     'hooks_new' => 'Add a new Hook...',
-    'hooks_plugin_uninstall' => "Are you sure you want to uninstall Hooks? This will remove all your Hooks from the database.",
-    'hooks_plugin_uninstall_confirm' => "Click here to uninstall Hooks.",
+    'hooks_plugin_uninstall' => 'Are you sure you want to uninstall Hooks? This will remove all your Hooks from the database.',
+    'hooks_plugin_uninstall_confirm' => 'Click here to uninstall Hooks.',
     'hooks_preview' => 'Preview Hook',
     'hooks_preview_output' => 'Preview',
     'hooks_priority' => 'Priority',
@@ -95,6 +95,4 @@ $l = array(
     'hooks_tab_desc' => 'This section allows you to create and manage plugin hooks.',
     'hooks_title' => 'Title',
     'hooks_title_desc' => 'Enter a title for this hook.',
-    );
-
-?>
+);
