@@ -668,7 +668,7 @@ function hooks_page()
 
         if ($row['hactive']) {
             $table->construct_cell(
-                "<img src=\"styles/{$page->style}/images/icons/tick.png\" alt=\"{$lang->hooks_tick}\" />",
+                "<img src=\"styles/{$page->style}/images/icons/tick.png\" alt=\"{$lang->hooks_legend_tick}\" />",
                 array(
                     'class' => 'align_center',
                     'style' => 'white-space: nowrap;'
@@ -678,7 +678,7 @@ function hooks_page()
             $exportids[] = $row['hid'];
         } else {
             $table->construct_cell(
-                "<img src=\"styles/{$page->style}/images/icons/cross.png\" alt=\"{$lang->hooks_cross}\" />",
+                "<img src=\"styles/{$page->style}/images/icons/cross.png\" alt=\"{$lang->hooks_legend_cross}\" />",
                 array(
                     'class' => 'align_center',
                     'style' => 'white-space: nowrap;'
